@@ -125,9 +125,6 @@ impl App {
                 self.handle_server_notification_event(app_server_client, notification)
                     .await;
             }
-            AppServerEvent::LegacyNotification(_notification) => {
-                tracing::debug!("ignoring legacy app-server notification in tui_app_server");
-            }
             AppServerEvent::ServerRequest(request) => {
                 if let ServerRequest::ChatgptAuthTokensRefresh { request_id, params } = request {
                     self.handle_chatgpt_auth_tokens_refresh_request(
