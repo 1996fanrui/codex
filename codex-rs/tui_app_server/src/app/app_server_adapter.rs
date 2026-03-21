@@ -19,7 +19,6 @@ use crate::app_server_session::status_account_display_from_auth_mode;
 use crate::local_chatgpt_auth::load_local_chatgpt_auth;
 use codex_app_server_client::AppServerEvent;
 use codex_app_server_protocol::AuthMode;
-use codex_app_server_protocol::ChatgptAuthTokensRefreshParams;
 use codex_app_server_protocol::JSONRPCErrorError;
 use codex_app_server_protocol::RequestId;
 use codex_app_server_protocol::ServerNotification;
@@ -126,13 +125,9 @@ impl App {
                     .await;
             }
             AppServerEvent::ServerRequest(request) => {
-                if let ServerRequest::ChatgptAuthTokensRefresh { request_id, params } = request {
-                    self.handle_chatgpt_auth_tokens_refresh_request(
-                        app_server_client,
-                        request_id,
-                        params,
-                    )
-                    .await;
+                if let ServerRequest::ChatgptAuthTokensRefresh { request_id, .. } = request {
+                    self.handle_chatgpt_auth_tokens_refresh_request(app_server_client, request_id)
+                        .await;
                     return;
                 }
                 self.handle_server_request_event(app_server_client, request)
@@ -258,7 +253,6 @@ impl App {
         &mut self,
         app_server_client: &AppServerSession,
         request_id: RequestId,
-        params: ChatgptAuthTokensRefreshParams,
     ) {
         let config = self.config.clone();
         let result = tokio::task::spawn_blocking(move || {
@@ -266,7 +260,6 @@ impl App {
                 &config.codex_home,
                 config.cli_auth_credentials_store_mode,
                 config.forced_chatgpt_workspace_id.as_deref(),
-                &params,
             )
         })
         .await;
@@ -483,14 +476,12 @@ fn resolve_chatgpt_auth_tokens_refresh_response(
     codex_home: &std::path::Path,
     auth_credentials_store_mode: codex_core::auth::AuthCredentialsStoreMode,
     forced_chatgpt_workspace_id: Option<&str>,
-    params: &ChatgptAuthTokensRefreshParams,
 ) -> Result<codex_app_server_protocol::ChatgptAuthTokensRefreshResponse, String> {
     let auth = load_local_chatgpt_auth(
         codex_home,
         auth_credentials_store_mode,
         forced_chatgpt_workspace_id,
     )?;
-    let _ = params;
     Ok(auth.to_refresh_response())
 }
 
@@ -1136,10 +1127,6 @@ mod refresh_tests {
             codex_home.path(),
             AuthCredentialsStoreMode::File,
             Some("workspace-1"),
-            &ChatgptAuthTokensRefreshParams {
-                reason: codex_app_server_protocol::ChatgptAuthTokensRefreshReason::Unauthorized,
-                previous_account_id: Some("workspace-1".to_string()),
-            },
         )
         .expect("refresh response should resolve");
 
@@ -1157,10 +1144,6 @@ mod refresh_tests {
             codex_home.path(),
             AuthCredentialsStoreMode::File,
             Some("workspace-1"),
-            &ChatgptAuthTokensRefreshParams {
-                reason: codex_app_server_protocol::ChatgptAuthTokensRefreshReason::Unauthorized,
-                previous_account_id: Some("workspace-2".to_string()),
-            },
         )
         .expect("stale previous workspace should not fail local auth refresh");
 
