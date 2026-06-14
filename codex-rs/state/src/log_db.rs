@@ -47,6 +47,15 @@ use crate::StateRuntime;
 const LOG_QUEUE_CAPACITY: usize = 512;
 const LOG_BATCH_SIZE: usize = 128;
 const LOG_FLUSH_INTERVAL: Duration = Duration::from_secs(2);
+pub const DEFAULT_SQLITE_LOG_FILTER: &str = concat!(
+    "warn,",
+    "codex_api=info,",
+    "codex_app_server=info,",
+    "codex_core=info,",
+    "codex_mcp=info,",
+    "codex_state=info,",
+    "codex_tui=info",
+);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct LogSinkQueueConfig {
